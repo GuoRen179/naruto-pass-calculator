@@ -30,10 +30,17 @@ jobs:
         with:
           enablement: true
 
+      - name: Prepare static site
+        run: |
+          mkdir _site
+          cp index.html _site/index.html
+          cp -R apps _site/apps
+          cp -R packages _site/packages
+
       - name: Upload static files
         uses: actions/upload-pages-artifact@v3
         with:
-          path: apps/web
+          path: _site
 
       - name: Deploy to GitHub Pages
         id: deployment
