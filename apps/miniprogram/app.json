@@ -1,0 +1,9 @@
+{
+  "pages": ["pages/index/index"],
+  "window": {
+    "navigationBarTitleText": "忍法帖计算器",
+    "navigationBarBackgroundColor": "#203b43",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f4f0e7"
+  }
+}

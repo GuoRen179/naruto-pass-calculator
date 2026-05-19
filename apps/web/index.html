@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>火影忍者手游忍法帖补全计算器</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main id="app-shell" class="app-shell" data-mode="all">
+      <section class="hero">
+        <div class="hero-copy-block">
+          <p class="eyebrow">火影忍者手游 · 忍法帖作战台</p>
+          <h1>火影忍者手游忍法帖补全计算器</h1>
+          <p class="hero-copy">
+            先填赛季进度，再选择 S 忍或秘卷目标。系统会按本期剩余经验、当前可用兑换币和买等级成本，给出能否当期补出的判断。
+          </p>
+        </div>
+      </section>
+
+      <section class="command-panel">
+        <div class="section-heading">
+          <p class="eyebrow">赛季进度</p>
+          <h2>先填你现在的忍法帖情况</h2>
+        </div>
+
+        <div class="action-bar" aria-label="主要操作">
+          <button type="button" class="ui-button ui-button-primary" data-command="calculate">开始计算</button>
+          <button type="button" class="ui-button ui-button-paper" data-command="reset">清空重置</button>
+          <button type="button" class="ui-button ui-button-dark" data-command="export">导出结果</button>
+          <button type="button" class="ui-button ui-button-dark" data-command="save">保存配置</button>
+        </div>
+
+        <div class="command-layout">
+          <div class="input-board">
+            <label>
+              <span>忍法帖档位</span>
+              <select id="pass-type" name="passType">
+                <option value="legend198">198 元传说版</option>
+                <option value="normal25">25 元普通版</option>
+                <option value="none">未开通</option>
+              </select>
+            </label>
+
+            <label>
+              <span>额外购买等级</span>
+              <input id="extra-levels" name="extraLevels" type="number" min="0" max="200" value="0" />
+            </label>
+
+            <label>
+              <span>当前忍法帖等级</span>
+              <input id="current-pass-level" name="currentPassLevel" type="number" min="1" max="999" value="160" />
+            </label>
+
+            <label>
+              <span>当前等级内经验</span>
+              <input id="current-pass-exp" name="currentPassExp" type="number" min="0" max="999" value="0" />
+            </label>
+
+            <label>
+              <span>兑换币来源</span>
+              <select id="coin-source" name="coinSource">
+                <option value="manual">手动输入当前剩余币</option>
+                <option value="level">按当前等级理论估算</option>
+              </select>
+            </label>
+
+            <label>
+              <span>当前可用兑换币</span>
+              <input id="current-coins" name="currentCoins" type="number" min="0" value="0" />
+            </label>
+
+            <label>
+              <span>赛季结束时间（北京时间）</span>
+              <input id="season-end-time" name="seasonEndTime" type="datetime-local" value="2026-05-31T12:00" />
+            </label>
+
+            <label>
+              <span>剩余周任务经验</span>
+              <input id="remaining-weekly-exp" name="remainingWeeklyExp" type="number" min="0" max="3500" value="0" />
+            </label>
+
+            <label>
+              <span>剩余活跃奖励经验</span>
+              <input id="remaining-activity-exp" name="remainingActivityExp" type="number" min="0" value="0" />
+            </label>
+
+            <div class="quick-row field-full" aria-label="快捷填充">
+              <button type="button" data-action="weekly-zero">周任务已满</button>
+              <button type="button" data-action="weekly-full">周任务未做</button>
+              <button type="button" data-action="activity-1100">活跃 +1100</button>
+              <button type="button" data-action="activity-1300">活跃 +1300</button>
+              <button type="button" data-action="activity-clear">清空活跃</button>
+            </div>
+          </div>
+
+          <aside class="tactical-readout" aria-label="赛季摘要">
+            <div class="readout-card is-dark">
+              <span>本季理论总币</span>
+              <strong id="season-coins">620</strong>
+            </div>
+            <div class="readout-card is-dark">
+              <span>买等级点券</span>
+              <strong id="level-coupons">0</strong>
+            </div>
+            <div class="readout-card">
+              <span>当前可用余额</span>
+              <strong id="effective-current-coins">0</strong>
+            </div>
+            <div class="readout-card">
+              <span>等级累计获得</span>
+              <strong id="level-coins">0</strong>
+            </div>
+            <div class="readout-card">
+              <span>剩余任务新增</span>
+              <strong id="next-week-coins">0</strong>
+            </div>
+            <div class="readout-card">
+              <span>预计最终等级</span>
+              <strong id="final-pass-level">160级 (0/1000)</strong>
+            </div>
+            <div class="readout-card">
+              <span>剩余时间</span>
+              <strong id="season-left-time">--</strong>
+            </div>
+            <div class="readout-card">
+              <span>日历周参考</span>
+              <strong id="season-left-weeks">--</strong>
+            </div>
+          </aside>
+        </div>
+
+        <div class="progress-board" aria-label="经验进度">
+          <div>
+            <div class="progress-title">
+              <span>当前等级经验</span>
+              <strong id="level-exp-label">0/1000</strong>
+            </div>
+            <div class="progress-track"><span id="level-exp-bar"></span></div>
+          </div>
+          <div>
+            <div class="progress-title">
+              <span>剩余周任务</span>
+              <strong id="weekly-exp-label">0/3500</strong>
+            </div>
+            <div class="progress-track"><span id="weekly-exp-bar"></span></div>
+          </div>
+        </div>
+      </section>
+
+      <nav class="mode-tabs" aria-label="计算模式">
+        <button type="button" class="is-active" data-mode-button="all">全部</button>
+        <button type="button" data-mode-button="ninja">S 忍补片</button>
+        <button type="button" data-mode-button="scroll">秘卷升级</button>
+      </nav>
+
+      <section class="calculator-grid">
+        <form id="ninja-form" class="calculator-card ninja-card">
+          <div class="card-heading">
+            <p class="eyebrow">往期 S 忍</p>
+            <h2>补片计算</h2>
+          </div>
+
+          <div class="form-grid">
+            <div class="field-full">
+              <div class="field-label">目标 S 忍</div>
+              <input id="ninja-id" name="ninjaId" type="hidden" />
+              <div id="ninja-picker" class="ninja-picker" role="listbox" aria-label="目标 S 忍"></div>
+            </div>
+
+            <label>
+              <span>已有碎片</span>
+              <input name="ownedFragments" type="number" min="0" max="99" value="0" />
+            </label>
+          </div>
+
+          <div class="result-box" id="ninja-result"></div>
+        </form>
+
+        <form id="scroll-form" class="calculator-card scroll-card">
+          <div class="card-heading">
+            <p class="eyebrow">忍法帖秘卷</p>
+            <h2>升级计算</h2>
+          </div>
+
+          <div class="form-grid">
+            <div class="field-full">
+              <div class="field-label">目标秘卷</div>
+              <input id="scroll-id" name="scrollId" type="hidden" />
+              <div id="scroll-picker" class="scroll-picker" role="listbox" aria-label="目标秘卷"></div>
+            </div>
+
+            <label>
+              <span>当前等级</span>
+              <input name="currentScrollLevel" type="number" min="0" max="10" value="0" />
+            </label>
+
+            <label>
+              <span>当前等级内碎片</span>
+              <input name="currentScrollFragments" type="number" min="0" value="0" />
+            </label>
+
+            <label>
+              <span>目标等级</span>
+              <input name="targetScrollLevel" type="number" min="0" max="10" value="10" />
+            </label>
+          </div>
+
+          <div class="result-box" id="scroll-result"></div>
+        </form>
+      </section>
+    </main>
+
+    <script type="module" src="./main.mjs"></script>
+  </body>
+</html>

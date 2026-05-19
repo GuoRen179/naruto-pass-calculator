@@ -1,0 +1,12 @@
+{
+  "description": "火影忍者手游忍法帖碎片计算器",
+  "appid": "touristappid",
+  "projectname": "naruto-pass-tool",
+  "miniprogramRoot": "./",
+  "setting": {
+    "es6": true,
+    "enhance": true,
+    "minified": true
+  },
+  "compileType": "miniprogram"
+}

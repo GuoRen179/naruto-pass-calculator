@@ -1,0 +1,7 @@
+<view class="page">
+  <view class="panel">
+    <text class="eyebrow">火影忍者手游</text>
+    <text class="title">忍法帖补片计算器</text>
+    <text class="hint">小程序端页面骨架已创建，下一步接入共享计算核心和表单交互。</text>
+  </view>
+</view>
