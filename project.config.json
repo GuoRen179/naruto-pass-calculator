@@ -2,8 +2,8 @@
   "description": "火影忍者手游忍法帖碎片计算器",
   "appid": "wx482eca57f7d1c467",
   "projectname": "naruto-pass-tool",
-  "miniprogramRoot": "./",
-  "cloudfunctionRoot": "cloudfunctions/",
+  "miniprogramRoot": "apps/miniprogram/",
+  "cloudfunctionRoot": "apps/miniprogram/cloudfunctions/",
   "setting": {
     "es6": true,
     "enhance": true,
@@ -31,8 +31,14 @@
   "compileType": "miniprogram",
   "simulatorPluginLibVersion": {},
   "packOptions": {
-    "ignore": [],
+    "ignore": [
+      {
+        "value": "project.private.config.json",
+        "type": "file"
+      }
+    ],
     "include": []
   },
-  "editorSetting": {}
+  "editorSetting": {},
+  "libVersion": "3.16.0"
 }

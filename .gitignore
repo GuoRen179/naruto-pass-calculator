@@ -16,3 +16,14 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+
+.codex/
+.trae/
+project.private.config.json
+**/project.private.config.json
+
+/app.js
+/app.json
+/app.wxss
+/pages
+/小程序头像-*.png

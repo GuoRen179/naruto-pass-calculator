@@ -1,7 +1,507 @@
-<view class="page">
-  <view class="panel">
-    <text class="eyebrow">火影忍者手游</text>
-    <text class="title">忍法帖补片计算器</text>
-    <text class="hint">小程序端页面骨架已创建，下一步接入共享计算核心和表单交互。</text>
+<view class="page mode-{{mode}}" style="{{pageBackgroundStyle}}">
+  <image wx:if="{{backgroundImage}}" class="page-bg-image" src="{{backgroundImage}}" mode="aspectFill" />
+  <view class="hero" style="{{heroBackgroundStyle}}">
+    <image class="hero-scene" src="../../assets/backgrounds/shinobi-duel-hero.jpg" mode="aspectFill" />
+    <button wx:if="{{isDevelopMode}}" class="hero-admin" bindtap="onOpenAdminPanel">管理</button>
+    <view class="hero-inner">
+      <text class="eyebrow">火影忍者手游 · 忍法帖作战台</text>
+      <text class="title">忍法帖补全计算器</text>
+      <text class="hint">先填赛季进度，选择 S 忍或秘卷目标，系统给出补出判断和购买建议。</text>
+    </view>
+  </view>
+
+  <view class="card card-progress">
+    <view class="card-head">
+      <text class="card-eyebrow">赛季进度</text>
+      <text class="card-title">当前忍法帖情况</text>
+    </view>
+
+    <view class="form-list season-form">
+      <view class="form-item is-full">
+        <text class="label">忍法帖档位</text>
+        <picker mode="selector" value="{{passTypeIndex}}" range="{{passTypeLabels}}" bindchange="onPassTypeChange">
+          <view class="picker">{{passTypeLabels[passTypeIndex]}}</view>
+        </picker>
+      </view>
+
+      <view class="form-item is-half">
+        <text class="label">额外购买等级</text>
+        <input class="input" type="number" value="{{extraLevels}}" bindinput="onNumberInput" bindblur="onNumberBlur" data-field="extraLevels" disabled="{{!eligible}}" />
+      </view>
+
+      <view class="form-item is-half">
+        <text class="label">当前忍法帖等级</text>
+        <input class="input" type="number" value="{{currentPassLevel}}" bindinput="onNumberInput" bindblur="onNumberBlur" data-field="currentPassLevel" disabled="{{!eligible}}" />
+      </view>
+
+      <view class="form-item is-half">
+        <text class="label">当前等级内经验</text>
+        <input class="input" type="number" value="{{currentPassExp}}" bindinput="onNumberInput" bindblur="onNumberBlur" data-field="currentPassExp" disabled="{{!eligible}}" />
+      </view>
+
+      <view class="form-item is-half">
+        <text class="label">剩余周任务经验</text>
+        <input class="input" type="number" value="{{remainingWeeklyExp}}" bindinput="onNumberInput" bindblur="onNumberBlur" data-field="remainingWeeklyExp" disabled="{{!eligible}}" />
+      </view>
+
+      <view class="form-item is-half">
+        <text class="label">剩余活跃奖励经验</text>
+        <input class="input" type="number" value="{{remainingActivityExp}}" bindinput="onNumberInput" bindblur="onNumberBlur" data-field="remainingActivityExp" disabled="{{!eligible}}" />
+      </view>
+
+      <view class="quick-grid is-full">
+        <button class="quick-chip" bindtap="onQuickTap" data-action="weekly-zero" disabled="{{!eligible}}">周任务已满</button>
+        <button class="quick-chip" bindtap="onQuickTap" data-action="weekly-full" disabled="{{!eligible}}">周任务未做</button>
+        <button class="quick-chip" bindtap="onQuickTap" data-action="activity-1100" disabled="{{!eligible}}">活跃 +1100</button>
+        <button class="quick-chip" bindtap="onQuickTap" data-action="activity-1300" disabled="{{!eligible}}">活跃 +1300</button>
+        <button class="quick-chip" bindtap="onQuickTap" data-action="activity-clear" disabled="{{!eligible}}">清空活跃</button>
+      </view>
+
+      <view class="form-item is-full">
+        <text class="label">赛季结束（北京时间）</text>
+        <view class="row">
+          <picker mode="date" value="{{seasonEndDate}}" bindchange="onSeasonEndDateChange" disabled="{{!eligible}}">
+            <view class="picker picker-half">{{seasonEndDate}}</view>
+          </picker>
+          <picker mode="time" value="{{seasonEndTime}}" bindchange="onSeasonEndTimeChange" disabled="{{!eligible}}">
+            <view class="picker picker-half">{{seasonEndTime}}</view>
+          </picker>
+        </view>
+      </view>
+
+      <view class="form-item is-full">
+        <text class="label">兑换币来源</text>
+        <picker mode="selector" value="{{coinSourceIndex}}" range="{{coinSourceLabels}}" bindchange="onCoinSourceChange" disabled="{{!eligible}}">
+          <view class="picker">{{coinSourceLabels[coinSourceIndex]}}</view>
+        </picker>
+      </view>
+
+      <view class="form-item is-half">
+        <text class="label">当前可用兑换币</text>
+        <input class="input" type="number" value="{{currentCoins}}" bindinput="onNumberInput" bindblur="onNumberBlur" data-field="currentCoins" disabled="{{coinSourceValue === 'level' || !eligible}}" />
+      </view>
+    </view>
+
+    <view class="action-row">
+      <button class="btn btn-primary" bindtap="onCalculate">开始计算</button>
+      <button class="btn" bindtap="onReset">清空重置</button>
+      <button class="btn btn-dark" bindtap="onExport">导出结果</button>
+      <button class="btn btn-dark" bindtap="onSave">保存配置</button>
+      <button wx:if="{{isDevelopMode}}" class="btn btn-dark" bindtap="onOpenAdminPanel">管理设置</button>
+    </view>
+  </view>
+
+  <view class="card card-summary">
+    <view class="card-head">
+      <text class="card-eyebrow">赛季摘要</text>
+      <text class="card-title">数据一览</text>
+    </view>
+    <view class="summary-grid">
+      <view class="summary-item summary-dark">
+        <text class="summary-label">本季理论总币</text>
+        <text class="summary-value">{{seasonCoins}}</text>
+      </view>
+      <view class="summary-item summary-dark">
+        <text class="summary-label">买等级点券</text>
+        <text class="summary-value">{{levelCoupons}}</text>
+      </view>
+      <view class="summary-item">
+        <text class="summary-label">当前可用余额</text>
+        <text class="summary-value">{{availableCoins}}</text>
+      </view>
+      <view class="summary-item">
+        <text class="summary-label">等级累计获得</text>
+        <text class="summary-value">{{levelCoins}}</text>
+      </view>
+      <view class="summary-item">
+        <text class="summary-label">剩余任务新增</text>
+        <text class="summary-value">{{remainingTaskCoins}}</text>
+      </view>
+      <view class="summary-item">
+        <text class="summary-label">预计最终等级</text>
+        <text class="summary-value summary-small">{{finalPassLevel}}</text>
+      </view>
+      <view class="summary-item">
+        <text class="summary-label">剩余时间</text>
+        <text class="summary-value summary-small">{{seasonLeftTime}}</text>
+      </view>
+      <view class="summary-item">
+        <text class="summary-label">日历周参考</text>
+        <text class="summary-value summary-small">{{seasonLeftWeeks}} 周</text>
+      </view>
+    </view>
+
+    <view class="progress-board">
+      <view class="progress-item">
+        <view class="progress-title">
+          <text>当前等级经验</text>
+          <text>{{currentPassExp}}/1000</text>
+        </view>
+        <view class="progress-track"><view class="progress-fill" style="width: {{levelExpPercent}}%;"></view></view>
+      </view>
+      <view class="progress-item">
+        <view class="progress-title">
+          <text>剩余周任务</text>
+          <text>{{remainingWeeklyExp}}/3500</text>
+        </view>
+        <view class="progress-track"><view class="progress-fill" style="width: {{weeklyExpPercent}}%;"></view></view>
+      </view>
+    </view>
+  </view>
+
+  <view class="mode-tabs" wx:if="{{eligible}}">
+    <button
+      class="mode-tab {{mode === item.value ? 'is-active' : ''}}"
+      wx:for="{{modeTabs}}"
+      wx:key="value"
+      bindtap="onModeTap"
+      data-mode="{{item.value}}"
+    >
+      {{item.label}}
+    </button>
+  </view>
+
+  <view class="card card-ninja" wx:if="{{eligible && (mode === 'all' || mode === 'ninja')}}">
+    <view class="card-head">
+      <text class="card-eyebrow">往期 S 忍</text>
+      <text class="card-title">补片计算</text>
+    </view>
+
+    <view class="target-display" wx:if="{{selectedNinja}}">
+      <image wx:if="{{selectedNinja.image}}" class="target-avatar" src="{{selectedNinja.image}}" mode="aspectFill" />
+      <view wx:else class="target-avatar target-avatar-placeholder">
+        <text>{{selectedNinja.shortLabel}}</text>
+      </view>
+      <view class="target-info">
+        <text class="target-name">{{selectedNinja.name}}</text>
+        <text class="target-meta">{{ninjaPriceMode}}</text>
+      </view>
+    </view>
+
+    <view class="label">点击头像选择目标</view>
+    <scroll-view class="avatar-scroll" scroll-x enable-flex>
+      <view class="avatar-scroll-inner">
+        <view
+          class="avatar-option {{ninjaIndex === index ? 'is-selected' : ''}}"
+          wx:for="{{ninjaOptions}}"
+          wx:key="id"
+          wx:for-index="index"
+          bindtap="onNinjaTap"
+          data-index="{{index}}"
+        >
+          <image wx:if="{{item.image}}" class="avatar-thumb" src="{{item.image}}" mode="aspectFill" />
+          <view wx:else class="avatar-thumb avatar-thumb-placeholder">{{item.shortLabel}}</view>
+          <text class="avatar-label">{{item.name}}</text>
+        </view>
+      </view>
+    </scroll-view>
+
+    <view class="form-list target-form">
+      <view class="form-item is-half">
+        <text class="label">已有碎片</text>
+        <input class="input" type="number" value="{{ownedFragments}}" bindinput="onNumberInput" bindblur="onNumberBlur" data-field="ownedFragments" />
+      </view>
+    </view>
+
+    <view class="banner {{ninjaBannerClass}}" wx:if="{{ninjaBannerTitle}}">
+      <text class="banner-title">{{ninjaBannerTitle}}</text>
+      <text class="banner-desc">{{ninjaBannerDesc}}</text>
+    </view>
+
+    <view class="primary">
+      <text class="primary-label">还需兑换币</text>
+      <text class="primary-value">{{ninjaRequiredCoins}}</text>
+    </view>
+
+    <view class="kv">
+      <view class="kv-row"><text class="kv-key">还缺碎片</text><text class="kv-val">{{ninjaMissingFragments}} 片</text></view>
+      <view class="kv-row"><text class="kv-key">预计赛季数</text><text class="kv-val">{{ninjaSeasonsText}}</text></view>
+    </view>
+
+    <view class="recommend" wx:if="{{ninjaPlans.length}}">
+      <view class="recommend-head">
+        <text class="recommend-title">推荐套餐</text>
+        <text class="recommend-sub">跨期兑换币按清空后重新计算</text>
+      </view>
+      <view class="recommend-list">
+        <view class="recommend-card" wx:for="{{ninjaPlans}}" wx:key="id">
+          <text class="recommend-name">{{item.title}}</text>
+          <text class="recommend-desc">{{item.description}}</text>
+          <view class="recommend-kv">
+            <view class="recommend-kv-item">
+              <text class="kv-key">耗时</text>
+              <text class="kv-val">{{item.months === 0 ? '本期' : (item.months + '个月')}}</text>
+            </view>
+            <view class="recommend-kv-item">
+              <text class="kv-key">点券</text>
+              <text class="kv-val">{{item.coupons === 0 ? '不买' : (item.coupons + '点券')}}</text>
+            </view>
+            <view class="recommend-kv-item">
+              <text class="kv-key">剩余币</text>
+              <text class="kv-val">{{item.coinsAfterPlan}}</text>
+            </view>
+          </view>
+          <text class="recommend-purchase" wx:if="{{item.purchaseCombo}}">购买搭配：{{item.purchaseCombo}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="card card-ninja" wx:if="{{eligible && (mode === 'all' || mode === 'scroll')}}">
+    <view class="card-head">
+      <text class="card-eyebrow">忍法帖秘卷</text>
+      <text class="card-title">升级计算</text>
+    </view>
+
+    <view class="target-display" wx:if="{{selectedScroll}}">
+      <image wx:if="{{selectedScroll.image}}" class="target-avatar target-scroll" src="{{selectedScroll.image}}" mode="aspectFill" />
+      <view wx:else class="target-avatar target-scroll target-avatar-placeholder">
+        <text>{{selectedScroll.shortLabel}}</text>
+      </view>
+      <view class="target-info">
+        <text class="target-name">{{selectedScroll.name}}</text>
+        <text class="target-meta">当前 {{scrollProgressText}}</text>
+      </view>
+    </view>
+
+    <view class="label">点击头像选择目标</view>
+    <scroll-view class="avatar-scroll" scroll-x>
+      <view class="avatar-scroll-inner">
+        <view
+          class="avatar-option {{scrollIndex === index ? 'is-selected' : ''}}"
+          wx:for="{{scrollOptions}}"
+          wx:key="id"
+          wx:for-index="index"
+          bindtap="onScrollTap"
+          data-index="{{index}}"
+        >
+          <image wx:if="{{item.image}}" class="avatar-thumb avatar-thumb-scroll" src="{{item.image}}" mode="aspectFill" />
+          <view wx:else class="avatar-thumb avatar-thumb-scroll avatar-thumb-placeholder">{{item.shortLabel}}</view>
+          <text class="avatar-label">{{item.name}}</text>
+        </view>
+      </view>
+    </scroll-view>
+
+    <view class="form-list target-form scroll-level-form">
+      <view class="form-item is-third">
+        <text class="label">当前等级</text>
+        <input class="input" type="number" value="{{currentScrollLevel}}" bindinput="onNumberInput" bindblur="onNumberBlur" data-field="currentScrollLevel" />
+      </view>
+      <view class="form-item is-third">
+        <text class="label">当前等级内碎片</text>
+        <input class="input" type="number" value="{{currentScrollFragments}}" bindinput="onNumberInput" bindblur="onNumberBlur" data-field="currentScrollFragments" />
+      </view>
+      <view class="form-item is-third">
+        <text class="label">目标等级</text>
+        <input class="input" type="number" value="{{targetScrollLevel}}" bindinput="onNumberInput" bindblur="onNumberBlur" data-field="targetScrollLevel" />
+      </view>
+    </view>
+
+    <view class="banner {{scrollBannerClass}}" wx:if="{{scrollBannerTitle}}">
+      <text class="banner-title">{{scrollBannerTitle}}</text>
+      <text class="banner-desc">{{scrollBannerDesc}}</text>
+    </view>
+
+    <view class="primary">
+      <text class="primary-label">还需兑换币</text>
+      <text class="primary-value">{{scrollRequiredCoins}}</text>
+    </view>
+
+    <view class="kv">
+      <view class="kv-row"><text class="kv-key">还需碎片</text><text class="kv-val">{{scrollFragments}} 片</text></view>
+      <view class="kv-row"><text class="kv-key">兑换包数</text><text class="kv-val">{{scrollPacks}} 包</text></view>
+      <view class="kv-row"><text class="kv-key">预计赛季数</text><text class="kv-val">{{scrollSeasonsText}}</text></view>
+    </view>
+
+    <view class="recommend" wx:if="{{scrollPlans.length}}">
+      <view class="recommend-head">
+        <text class="recommend-title">推荐套餐</text>
+        <text class="recommend-sub">跨期兑换币按清空后重新计算</text>
+      </view>
+      <view class="recommend-list">
+        <view class="recommend-card" wx:for="{{scrollPlans}}" wx:key="id">
+          <text class="recommend-name">{{item.title}}</text>
+          <text class="recommend-desc">{{item.description}}</text>
+          <view class="recommend-kv">
+            <view class="recommend-kv-item">
+              <text class="kv-key">耗时</text>
+              <text class="kv-val">{{item.months === 0 ? '本期' : (item.months + '个月')}}</text>
+            </view>
+            <view class="recommend-kv-item">
+              <text class="kv-key">点券</text>
+              <text class="kv-val">{{item.coupons === 0 ? '不买' : (item.coupons + '点券')}}</text>
+            </view>
+            <view class="recommend-kv-item">
+              <text class="kv-key">剩余币</text>
+              <text class="kv-val">{{item.coinsAfterPlan}}</text>
+            </view>
+          </view>
+          <text class="recommend-purchase" wx:if="{{item.purchaseCombo}}">购买搭配：{{item.purchaseCombo}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="card card-empty" wx:if="{{!eligible}}">
+    <view class="banner banner-muted">
+      <text class="banner-title">当前档位无兑换资格</text>
+      <text class="banner-desc">只有 198 元传说版可以获得往期商店兑换币。</text>
+    </view>
+  </view>
+
+  <view class="admin-mask" wx:if="{{showAdminPanel}}" catchtap="onCloseAdminPanel">
+    <view class="admin-dialog" catchtap="noop">
+      <view class="admin-head">
+        <view>
+          <text class="card-eyebrow">管理员设置</text>
+          <text class="admin-title">赛季与新忍资料</text>
+        </view>
+        <button class="admin-close" bindtap="onCloseAdminPanel">关闭</button>
+      </view>
+
+      <view class="admin-section">
+        <text class="label">默认赛季结束（北京时间）</text>
+        <view class="row">
+          <picker mode="date" value="{{adminSeasonEndDate}}" bindchange="onAdminSeasonEndDateChange">
+            <view class="picker picker-half">{{adminSeasonEndDate}}</view>
+          </picker>
+          <picker mode="time" value="{{adminSeasonEndTime}}" bindchange="onAdminSeasonEndTimeChange">
+            <view class="picker picker-half">{{adminSeasonEndTime}}</view>
+          </picker>
+        </view>
+      </view>
+
+      <view class="admin-section">
+        <text class="label">大筒木蒲式头像</text>
+        <view class="admin-avatar-row">
+          <image wx:if="{{adminUrashikiImage}}" class="admin-avatar" src="{{adminUrashikiImage}}" mode="aspectFill" />
+          <view wx:else class="admin-avatar admin-avatar-placeholder">
+            <text>蒲</text>
+          </view>
+          <view class="admin-avatar-copy">
+            <text class="admin-copy-title">提交后会替换蒲式占位头像</text>
+            <text class="admin-copy-desc">图片保存到本机小程序缓存，适合你更新下一期前先预览。</text>
+          </view>
+        </view>
+        <view class="admin-tools">
+          <button class="quick-chip" bindtap="onChooseUrashikiImage">选择头像</button>
+          <button class="quick-chip" bindtap="onClearUrashikiImage">清除头像</button>
+        </view>
+      </view>
+
+      <view class="admin-section">
+        <text class="label">小程序背景图</text>
+        <view class="admin-avatar-row">
+          <image wx:if="{{adminBackgroundImage}}" class="admin-bg-preview" src="{{adminBackgroundImage}}" mode="aspectFill" />
+          <view wx:else class="admin-bg-preview admin-avatar-placeholder">
+            <text>景</text>
+          </view>
+          <view class="admin-avatar-copy">
+            <text class="admin-copy-title">替换首页和顶部背景</text>
+            <text class="admin-copy-desc">云端正式更新请在数据库添加 backgroundImage 字段；这里用于开发版本地预览。</text>
+          </view>
+        </view>
+        <view class="admin-tools">
+          <button class="quick-chip" bindtap="onChooseBackgroundImage">选择背景</button>
+          <button class="quick-chip" bindtap="onClearBackgroundImage">清除背景</button>
+        </view>
+      </view>
+
+      <view class="admin-section">
+        <text class="label">新增忍法帖 S 忍</text>
+        <view class="admin-avatar-row">
+          <image wx:if="{{adminNinjaImage}}" class="admin-avatar" src="{{adminNinjaImage}}" mode="aspectFill" />
+          <view wx:else class="admin-avatar admin-avatar-placeholder">
+            <text>S</text>
+          </view>
+          <view class="admin-avatar-copy">
+            <text class="admin-copy-title">添加名字和头像后会出现在 S 忍选择栏</text>
+            <text class="admin-copy-desc">新 S 按 15 币/片计算；老 S 按前 80 片 25 币、后 20 片 50 币计算。</text>
+          </view>
+        </view>
+        <view class="form-list admin-form-list">
+          <view class="form-item is-full">
+            <text class="label">S 忍名称</text>
+            <input class="input" value="{{adminNinjaName}}" placeholder="例如：大筒木浦式" bindinput="onAdminTextInput" data-field="adminNinjaName" />
+          </view>
+          <view class="form-item is-half">
+            <text class="label">简称（选填）</text>
+            <input class="input" value="{{adminNinjaAlias}}" placeholder="例如：浦式" bindinput="onAdminTextInput" data-field="adminNinjaAlias" />
+          </view>
+          <view class="form-item is-half">
+            <text class="label">计价类型</text>
+            <picker mode="selector" value="{{adminNinjaEraIndex}}" range="{{adminNinjaEraLabels}}" bindchange="onAdminNinjaEraChange">
+              <view class="picker">{{adminNinjaEraLabels[adminNinjaEraIndex]}}</view>
+            </picker>
+          </view>
+        </view>
+        <view class="admin-tools">
+          <button class="quick-chip" bindtap="onChooseAdminNinjaImage">选择头像</button>
+          <button class="quick-chip" bindtap="onClearAdminNinjaImage">清除头像</button>
+          <button class="quick-chip admin-add-chip" bindtap="onAddAdminNinja">添加 S 忍</button>
+        </view>
+        <view class="admin-list" wx:if="{{adminExtraNinjas.length}}">
+          <view class="admin-list-item" wx:for="{{adminExtraNinjas}}" wx:key="id" wx:for-index="index">
+            <image wx:if="{{item.image}}" class="admin-list-thumb" src="{{item.image}}" mode="aspectFill" />
+            <view wx:else class="admin-list-thumb admin-avatar-placeholder">{{item.shortLabel}}</view>
+            <view class="admin-list-copy">
+              <text class="admin-copy-title">{{item.name}}</text>
+              <text class="admin-copy-desc">{{item.era === 'old' ? '老 S 分段计价' : '新 S 15币/片'}}</text>
+            </view>
+            <button class="admin-delete" bindtap="onDeleteAdminNinja" data-index="{{index}}">删除</button>
+          </view>
+        </view>
+      </view>
+
+      <view class="admin-section">
+        <text class="label">新增忍法帖秘卷</text>
+        <view class="admin-avatar-row">
+          <image wx:if="{{adminScrollImage}}" class="admin-avatar" src="{{adminScrollImage}}" mode="aspectFill" />
+          <view wx:else class="admin-avatar admin-avatar-placeholder">
+            <text>卷</text>
+          </view>
+          <view class="admin-avatar-copy">
+            <text class="admin-copy-title">添加名字和图标后会出现在秘卷选择栏</text>
+            <text class="admin-copy-desc">秘卷计算共用同一套升级碎片规则，只需要维护名称和图像。</text>
+          </view>
+        </view>
+        <view class="form-list admin-form-list">
+          <view class="form-item is-full">
+            <text class="label">秘卷名称</text>
+            <input class="input" value="{{adminScrollName}}" placeholder="例如：幻术·时间回溯" bindinput="onAdminTextInput" data-field="adminScrollName" />
+          </view>
+          <view class="form-item is-full">
+            <text class="label">短标签（选填）</text>
+            <input class="input" value="{{adminScrollShortLabel}}" placeholder="不填则自动取名称前两字" bindinput="onAdminTextInput" data-field="adminScrollShortLabel" />
+          </view>
+        </view>
+        <view class="admin-tools">
+          <button class="quick-chip" bindtap="onChooseAdminScrollImage">选择图标</button>
+          <button class="quick-chip" bindtap="onClearAdminScrollImage">清除图标</button>
+          <button class="quick-chip admin-add-chip" bindtap="onAddAdminScroll">添加秘卷</button>
+        </view>
+        <view class="admin-list" wx:if="{{adminExtraScrolls.length}}">
+          <view class="admin-list-item" wx:for="{{adminExtraScrolls}}" wx:key="id" wx:for-index="index">
+            <image wx:if="{{item.image}}" class="admin-list-thumb" src="{{item.image}}" mode="aspectFill" />
+            <view wx:else class="admin-list-thumb admin-avatar-placeholder">{{item.shortLabel}}</view>
+            <view class="admin-list-copy">
+              <text class="admin-copy-title">{{item.name}}</text>
+              <text class="admin-copy-desc">秘卷升级目标</text>
+            </view>
+            <button class="admin-delete" bindtap="onDeleteAdminScroll" data-index="{{index}}">删除</button>
+          </view>
+        </view>
+      </view>
+
+      <view class="admin-actions">
+        <button class="btn btn-primary" bindtap="onSaveAdminSettings">保存管理员设置</button>
+        <button class="btn btn-cloud" bindtap="onPublishAdminSettingsToCloud" loading="{{adminCloudPublishLoading}}" disabled="{{adminCloudPublishLoading}}">发布到云端</button>
+        <button class="btn" bindtap="onCloseAdminPanel">取消</button>
+      </view>
+    </view>
+  </view>
+
+  <view class="page-foot">
+    <text>数据仅供游戏内参考，实际以游戏内显示为准</text>
   </view>
 </view>
